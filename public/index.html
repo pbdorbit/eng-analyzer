@@ -1385,20 +1385,37 @@ CRITICAL JSON RULES:
 
                 try {
                     const userContent = buildUserContent(text, qType, instruction, typeInstr);
-                    const res = await fetch("/api/analyze", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            model: "claude-sonnet-4-20250514",
-                            max_tokens: 16000,
-                            stream: true,
-                            system: SYS,
-                            messages: [
-                                { role: "user", content: userContent },
-                            ],
-                        }),
+                    const reqBody = JSON.stringify({
+                        model: "claude-sonnet-4-20250514",
+                        max_tokens: 16000,
+                        stream: true,
+                        system: SYS,
+                        messages: [{ role: "user", content: userContent }],
                     });
-                    const raw = await readAnthropicStream(res);
+                    let raw;
+                    for (let attempt = 0; attempt < 4; attempt++) {
+                        if (attempt > 0) {
+                            const delay = Math.min(5000 * attempt, 20000);
+                            stat.textContent = `API 과부하 — ${delay / 1000}초 후 재시도 (${attempt}/3)`;
+                            await new Promise(r => setTimeout(r, delay));
+                        }
+                        const res = await fetch("/api/analyze", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: reqBody,
+                        });
+                        if (res.status === 529) {
+                            if (attempt < 3) continue;
+                            throw new Error("API가 과부하 상태입니다. 잠시 후 다시 시도해주세요.");
+                        }
+                        try {
+                            raw = await readAnthropicStream(res);
+                        } catch (e) {
+                            if (attempt < 3 && (e.message?.toLowerCase().includes("overload") || e.message?.includes("과부하"))) continue;
+                            throw e;
+                        }
+                        break;
+                    }
                     const parsed = repairParseJson(raw);
 
                     // 문장삽입: answerMarker 기반으로 [삽입] 문장을 올바른 위치로 이동
