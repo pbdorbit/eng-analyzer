@@ -1268,7 +1268,7 @@ CRITICAL JSON RULES:
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            model: "claude-sonnet-4-20250514",
+                            model: "claude-sonnet-4-6",
                             max_tokens: 1536,
                             stream: true,
                             system: `수능·내신 영어 해설서 스타일로 답변하라. AI 어투("~입니다", "~해요") 금지. 아래 형식을 반드시 지켜라.
@@ -1386,7 +1386,7 @@ CRITICAL JSON RULES:
                 try {
                     const userContent = buildUserContent(text, qType, instruction, typeInstr);
                     const reqBody = JSON.stringify({
-                        model: "claude-sonnet-4-20250514",
+                        model: "claude-sonnet-4-6",
                         max_tokens: 16000,
                         stream: true,
                         system: SYS,
